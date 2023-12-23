@@ -1,18 +1,33 @@
+use rand::Rng;
 use rand::seq::SliceRandom;
-// use std::sync::mpsc;
-// use std::sync::mpsc::{Receiver, Sender};
-// use std::thread;
+use std::sync::mpsc;
+use std::thread;
 
-const NUM_POOLS: usize = 10;
-const GENS_PER_POOL: i32 = 1_000_000;
+const NUM_POOLS: usize = 20;
+const GENS_PER_POOL: i32 = 100_000;
 const TOTAL_ALLELES: i32 = 100;
+const MALARIA_SURVIVAL: f64 = 0.5;
 const DEBUG: bool = false;
 
 fn main() {
-    let mut totals = Vec::new();
+    let (tx, rx) = mpsc::channel();
+
+    let mut children = Vec::new();
     for _ in 0..NUM_POOLS {
-        // run_simulation(2);
-        totals.push(run_simulation(GENS_PER_POOL));
+        let tx = tx.clone();
+        let child = thread::spawn(move || {
+            tx.send(run_simulation(GENS_PER_POOL)).unwrap();
+        });
+        children.push(child);
+    }
+
+    let mut totals = Vec::with_capacity(NUM_POOLS as usize);
+    for _ in 0..NUM_POOLS {
+        totals.push(rx.recv().unwrap());
+    }
+
+    for child in children {
+        child.join().unwrap();
     }
 
     println!();
@@ -91,10 +106,12 @@ fn run_generation(alleles: Vec<Allele>) -> Vec<Allele> {
         println!("> {}", parsed_to_string(parsed));
     }
 
+    let mut rng = rand::thread_rng();
+
     genes
         .into_iter()
         .filter(|(a, b)| match (a, b) {
-            (Allele::A, Allele::A) => rand::random(),
+            (Allele::A, Allele::A) => rng.gen::<f64>() < MALARIA_SURVIVAL,
             (Allele::A, Allele::S) | (Allele::S, Allele::A) => true,
             (Allele::S, Allele::S) => false,
         })
