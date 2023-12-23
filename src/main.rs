@@ -7,6 +7,8 @@ const NUM_POOLS: usize = 20;
 const GENS_PER_POOL: i32 = 100_000;
 const TOTAL_ALLELES: i32 = 100;
 const MALARIA_SURVIVAL: f64 = 0.5;
+const INITIAL_A: i32 = 25;
+const INITIAL_S: i32 = 75;
 const DEBUG: bool = false;
 
 fn main() {
@@ -70,7 +72,7 @@ fn median(data: &Vec<i32>) -> f64 {
 }
 
 fn run_simulation(generations: i32) -> (i32, i32) {
-    let mut alleles = generate_alleles(75, 25);
+    let mut alleles = generate_alleles(INITIAL_A, INITIAL_S);
     for gen_num in 0..generations {
         let gen = run_generation(alleles);
         let (percent_a, percent_s, real_a, real_s) = parse_alleles(&gen);
